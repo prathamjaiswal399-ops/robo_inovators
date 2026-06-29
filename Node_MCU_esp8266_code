@@ -1,0 +1,47 @@
+// Shift Register Pins
+const int latchPin = D1; // Pin 12 on Shield
+const int dataPin = D2;  // Pin 8 on Shield
+const int clockPin = D3; // Pin 4 on Shield
+
+// Motor PWM Pins (Speed)
+const int motor1PWM = D5; // Pin 11 on Shield
+const int motor2PWM = D6; // Pin 3 on Shield
+
+void setup() {
+  pinMode(latchPin, OUTPUT);
+  pinMode(dataPin, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(motor1PWM, OUTPUT);
+  pinMode(motor2PWM, OUTPUT);
+}
+
+// Ye function motor ko direction batayega
+void setMotor(byte directions) {
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, MSBFIRST, directions);
+  digitalWrite(latchPin, HIGH);
+}
+
+void loop() {
+  // 1. Forward Jao
+  analogWrite(motor1PWM, 255); // Full Speed
+  analogWrite(motor2PWM, 255); 
+  setMotor(0b10100000); // Binary code for M1, M2 Forward
+  delay(2000);
+
+  // 2. Stop
+  analogWrite(motor1PWM, 0); 
+  analogWrite(motor2PWM, 0);
+  delay(1000);
+
+  // 3. Backward Jao
+  analogWrite(motor1PWM, 255);
+  analogWrite(motor2PWM, 255);
+  setMotor(0b01010000); // Binary code for M1, M2 Backward
+  delay(2000);
+  
+  // 4. Stop
+  analogWrite(motor1PWM, 0); 
+  analogWrite(motor2PWM, 0);
+  delay(1000);
+}
