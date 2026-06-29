@@ -1,0 +1,115 @@
+#include <AFMotor.h>
+
+// --- Motor Setup (4WD) ---
+AF_DCMotor m1(1); AF_DCMotor m2(2); // Left Side
+AF_DCMotor m3(3); AF_DCMotor m4(4); // Right Side
+
+// --- IR Sensors Pins ---
+const int S_FarL  = A0; 
+const int S_NearL = A1;
+const int S_Mid   = A2;
+const int S_NearR = A3; 
+const int S_FarR  = A4;
+
+// --- Ultrasonic Pins ---
+const int trigPin = 11; 
+const int echoPin = 12;
+
+long duration;
+int distance;
+int safetyDistance = 20; // 20cm ke paas aate hi ruk jayega ya mudega
+
+void setup() {
+  Serial.begin(9600);
+  
+  // IR Sensors Input
+  pinMode(S_FarL, INPUT);  pinMode(S_NearL, INPUT);
+  pinMode(S_Mid, INPUT);   pinMode(S_NearR, INPUT);
+  pinMode(S_FarR, INPUT);
+  
+  // Ultrasonic Pins
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  // Thoda wait taaki power on hone par jhatka na lage
+  delay(2000); 
+}
+
+void loop() {
+  checkObstacle(); // Pehle rasta dekho
+
+  if (distance <= safetyDistance) {
+    // Agar rasta band hai (Obstacle hai)
+    stopRobot();
+    delay(500);
+    turnRight(); // Obstacle dekh kar turn lega
+    delay(500);
+  } 
+  else {
+    // Agar rasta saaf hai toh IR logic chalega
+    lineFollowerLogic();
+  }
+}
+
+// --- Obstacle Checking ---
+void checkObstacle() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  duration = pulseIn(echoPin, HIGH);
+  distance = duration * 0.034 / 2;
+}
+
+// --- Line Follower + Default Movement ---
+void lineFollowerLogic() {
+  int valFarL  = digitalRead(S_FarL);
+  int valNearL = digitalRead(S_NearL);
+  int valMid   = digitalRead(S_Mid);
+  int valNearR = digitalRead(S_NearR);
+  int valFarR  = digitalRead(S_FarR);
+
+  // Case 1: Agar koi bhi sensor black line nahi dekh raha (Sab White hain)
+  // Toh tumhare kahe anusar robot Forward chalega
+  if (valFarL == LOW && valNearL == LOW && valMid == LOW && valNearR == LOW && valFarR == LOW) {
+    moveForward();
+  }
+  // Case 2: Agar line mil gayi
+  else if (valMid == HIGH) { // Beech wala sensor black line par hai
+    moveForward();
+  }
+  else if (valNearL == HIGH || valFarL == HIGH) { // Left turn
+    turnLeft();
+  }
+  else if (valNearR == HIGH || valFarR == HIGH) { // Right turn
+    turnRight();
+  }
+  else {
+    moveForward(); // Safe side forward
+  }
+}
+
+// --- Motor Movements ---
+void moveForward() {
+  m1.run(FORWARD); m2.run(FORWARD); m3.run(FORWARD); m4.run(FORWARD);
+  setSpeedAll(200);
+}
+
+void turnLeft() {
+  m1.run(BACKWARD); m2.run(BACKWARD); m3.run(FORWARD); m4.run(FORWARD);
+  setSpeedAll(180);
+}
+
+void turnRight() {
+  m1.run(FORWARD); m2.run(FORWARD); m3.run(BACKWARD); m4.run(BACKWARD);
+  setSpeedAll(180);
+}
+
+void stopRobot() {
+  m1.run(RELEASE); m2.run(RELEASE); m3.run(RELEASE); m4.run(RELEASE);
+}
+
+void setSpeedAll(int s) {
+  m1.setSpeed(s); m2.setSpeed(s); m3.setSpeed(s); m4.setSpeed(s);
+}
